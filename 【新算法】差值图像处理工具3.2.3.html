@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>差值图像处理工具</title>
+    <style>
+        :root {
+            --primary-color: #27ae60;
+            --primary-dark: #219653;
+            --primary-light: #6fcf97;
+            --secondary-color: #f8f9fa;
+            --text-color: #2c3e50;
+            --border-color: #ddd;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --background-color: #f5f7fa;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        header {
+            text-align: center;
+            padding: 25px;
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            color: white;
+        }
+        
+        h1 {
+            margin-bottom: 10px;
+            font-size: 2.2rem;
+        }
+        
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .tabs {
+            display: flex;
+            justify-content: center;
+            background-color: white;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .tab {
+            padding: 15px 30px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            flex: 1;
+            text-align: center;
+            position: relative;
+        }
+        
+        .tab.active {
+            color: var(--primary-color);
+        }
+        
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background-color: var(--primary-color);
+        }
+        
+        .tab:not(.active):hover {
+            background-color: #f8f9fa;
+        }
+        
+        .page {
+            display: none;
+            padding: 25px;
+        }
+        
+        .page.active {
+            display: block;
+        }
+        
+        .page-title {
+            text-align: center;
+            margin-bottom: 25px;
+            color: var(--primary-color);
+            font-size: 1.8rem;
+        }
+        
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 25px;
+            justify-content: center;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn:hover {
+            background-color: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .btn-download {
+            background-color: var(--success-color);
+        }
+        
+        .btn-download:hover {
+            background-color: #219653;
+        }
+        
+        .download-section {
+            text-align: center;
+            margin: 0 0 25px 0;
+            padding: 20px;
+            background: #e9f7ef;
+            border-radius: 8px;
+            display: none;
+        }
+        
+        .file-list {
+            margin: 25px 0;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+            background: white;
+        }
+        
+        .file-list-header {
+            display: grid;
+            grid-template-columns: 50px 1fr 100px 120px;
+            padding: 15px;
+            background-color: var(--primary-light);
+            color: white;
+            font-weight: bold;
+        }
+        
+        .file-item {
+            display: grid;
+            grid-template-columns: 50px 1fr 100px 120px;
+            padding: 15px;
+            border-bottom: 1px solid var(--border-color);
+            align-items: center;
+        }
+        
+        .file-item:last-child {
+            border-bottom: none;
+        }
+        
+        .file-status {
+            font-size: 0.9rem;
+            padding: 4px 8px;
+            border-radius: 4px;
+            display: inline-block;
+            text-align: center;
+        }
+        
+        .status-waiting {
+            background-color: #f0f0f0;
+            color: #666;
+        }
+        
+        .status-processing {
+            background-color: #fff4e6;
+            color: #e67700;
+        }
+        
+        .status-completed {
+            background-color: #d3f9d8;
+            color: #2b8a3e;
+        }
+        
+        .progress-container {
+            margin: 20px 0;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+        
+        .progress-bar {
+            height: 25px;
+            background-color: #eee;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-light), var(--primary-color));
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 5px;
+        }
+        
+        .thread-select {
+            padding: 10px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            background: white;
+            font-weight: 500;
+        }
+        
+        .instructions {
+            margin: 25px 0;
+            padding: 20px;
+            background: #fff9db;
+            border-radius: 8px;
+            border-left: 4px solid var(--warning-color);
+        }
+        
+        .instructions h3 {
+            color: var(--warning-color);
+            margin-bottom: 10px;
+        }
+        
+        .instructions ul {
+            padding-left: 20px;
+        }
+        
+        .instructions li {
+            margin-bottom: 8px;
+        }
+        
+        @media (max-width: 768px) {
+            .file-list-header, .file-item {
+                grid-template-columns: 40px 1fr 80px;
+            }
+            
+            .file-size {
+                display: none;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .btn, .thread-select {
+                width: 100%;
+            }
+        }
+    </style>
+    <!-- 引入zip.js库 -->
+    <script src="https://cdn.jsdelivr.net/npm/@zip.js/zip.js@2.6.58/dist/zip.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>差值图像处理工具</h1>
+            <p class="subtitle">Made by CrewWhite</p>
+        </header>
+        
+        <div class="tabs">
+            <div class="tab active" data-tab="encode">加密模式</div>
+            <div class="tab" data-tab="decode">解密模式</div>
+        </div>
+        
+        <!-- 加密页面 -->
+        <div class="page active" id="page-encode">
+            <h2 class="page-title">图像加密</h2>
+            
+            <div class="controls">
+                <input type="file" id="encode-file-input" accept=".zip,image/*" multiple style="display: none;">
+                <button class="btn" id="encode-select-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M11 15H13V9H16L12 4L8 9H11V15Z" fill="currentColor"/>
+                        <path d="M20 18H4V11H2V18C2 19.103 2.897 20 4 20H20C21.103 20 22 19.103 22 18V11H20V18Z" fill="currentColor"/>
+                    </svg>
+                    选择图片或ZIP文件
+                </button>
+                <button class="btn" id="encode-start-btn" disabled>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M8 5V19L19 12L8 5Z" fill="currentColor"/>
+                    </svg>
+                    开始加密
+                </button>
+            </div>
+            
+            <div class="download-section" id="encode-download">
+                <h3>加密完成！</h3>
+                <p>已成功加密 <span id="encode-processed-count">0</span> 个文件</p>
+                <button class="btn btn-download" id="encode-download-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M11 15H13V9H16L12 4L8 9H11V15Z" fill="currentColor"/>
+                        <path d="M20 18H4V11H2V18C2 19.103 2.897 20 4 20H20C21.103 20 22 19.103 22 18V11H20V18Z" fill="currentColor"/>
+                    </svg>
+                    下载加密文件
+                </button>
+            </div>
+            
+            <div class="progress-container" id="encode-progress" style="display: none;">
+                <div class="progress-info">
+                    <span id="encode-file-progress">处理文件: 0/0</span>
+                    <span id="encode-percent-progress">进度: 0%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="encode-progress-fill"></div>
+                </div>
+            </div>
+            
+            <div class="file-list" id="encode-file-list" style="display: none;">
+                <div class="file-list-header">
+                    <div>序号</div>
+                    <div>文件名</div>
+                    <div class="file-size">大小</div>
+                    <div>状态</div>
+                </div>
+                <div class="file-list-content"></div>
+            </div>
+            
+            <div class="instructions">
+                <h3>使用说明</h3>
+                <ul>
+                    <li>选择要加密的图片文件或包含图片的ZIP压缩包（支持多选）</li>
+                    <li>点击"开始加密"按钮进行处理</li>
+                    <li>加密完成后点击"下载加密文件"保存结果</li>
+                    <li>加密后的图像需要使用对应的解密功能还原</li>
+                    <li>Tips：如果导入的图像大小总和过大在处理完毕后下载所需时间可能会长一些</li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- 解密页面 -->
+        <div class="page" id="page-decode">
+            <h2 class="page-title">图像解密</h2>
+            
+            <div class="controls">
+                <input type="file" id="decode-file-input" accept=".zip,image/*" multiple style="display: none;">
+                <button class="btn" id="decode-select-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M11 15H13V9H16L12 4L8 9H11V15Z" fill="currentColor"/>
+                        <path d="M20 18H4V11H2V18C2 19.103 2.897 20 4 20H20C21.103 20 22 19.103 22 18V11H20V18Z" fill="currentColor"/>
+                    </svg>
+                    选择图片或ZIP文件
+                </button>
+                <button class="btn" id="decode-start-btn" disabled>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M8 5V19L19 12L8 5Z" fill="currentColor"/>
+                    </svg>
+                    开始解密
+                </button>
+            </div>
+            
+            <div class="download-section" id="decode-download">
+                <h3>解密完成！</h3>
+                <p>已成功解密 <span id="decode-processed-count">0</span> 个文件</p>
+                <button class="btn btn-download" id="decode-download-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M11 15H13V9H16L12 4L8 9H11V15Z" fill="currentColor"/>
+                        <path d="M20 18H4V11H2V18C2 19.103 2.897 20 4 20H20C21.103 20 22 19.103 22 18V11H20V18Z" fill="currentColor"/>
+                    </svg>
+                    下载解密文件
+                </button>
+            </div>
+            
+            <div class="progress-container" id="decode-progress" style="display: none;">
+                <div class="progress-info">
+                    <span id="decode-file-progress">处理文件: 0/0</span>
+                    <span id="decode-percent-progress">进度: 0%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="decode-progress-fill"></div>
+                </div>
+            </div>
+            
+            <div class="file-list" id="decode-file-list" style="display: none;">
+                <div class="file-list-header">
+                    <div>序号</div>
+                    <div>文件名</div>
+                    <div class="file-size">大小</div>
+                    <div>状态</div>
+                </div>
+                <div class="file-list-content"></div>
+            </div>
+            
+            <div class="instructions">
+                <h3>使用说明</h3>
+                <ul>
+                    <li>选择要解密的图片文件或包含加密图片的ZIP压缩包（支持多选）</li>
+                    <li>点击"开始解密"按钮进行处理</li>
+                    <li>解密完成后点击"下载解密文件"保存结果</li>
+                    <li>只能解密由此工具加密的图像文件</li>
+                    <li>Tips：如果导入的图像大小总和过大在处理完毕后下载所需时间可能会长一些</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 配置zip.js
+        zip.configure({
+            useWebWorkers: true,
+            workerScriptsPath: 'https://cdn.jsdelivr.net/npm/@zip.js/zip.js@2.6.58/dist/'
+        });
+
+        // 页面切换逻辑
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                // 更新标签状态
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                
+                // 更新页面显示
+                const tabId = tab.getAttribute('data-tab');
+                document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+                document.getElementById(`page-${tabId}`).classList.add('active');
+            });
+        });
+        
+        // 加密页面逻辑
+        const encodeFileInput = document.getElementById('encode-file-input');
+        const encodeSelectBtn = document.getElementById('encode-select-btn');
+        const encodeStartBtn = document.getElementById('encode-start-btn');
+        const encodeFileList = document.getElementById('encode-file-list');
+        const encodeProgress = document.getElementById('encode-progress');
+        const encodeFileProgress = document.getElementById('encode-file-progress');
+        const encodePercentProgress = document.getElementById('encode-percent-progress');
+        const encodeProgressFill = document.getElementById('encode-progress-fill');
+        const encodeDownloadSection = document.getElementById('encode-download');
+        const encodeDownloadBtn = document.getElementById('encode-download-btn');
+        const encodeProcessedCount = document.getElementById('encode-processed-count');
+        
+        let encodeFiles = [];
+        let encodeResults = [];
+        
+        encodeSelectBtn.addEventListener('click', () => {
+            encodeFileInput.click();
+        });
+        
+        encodeFileInput.addEventListener('change', (e) => {
+            processSelectedFiles(e.target.files, 'encode');
+        });
+        
+        // 解密页面逻辑
+        const decodeFileInput = document.getElementById('decode-file-input');
+        const decodeSelectBtn = document.getElementById('decode-select-btn');
+        const decodeStartBtn = document.getElementById('decode-start-btn');
+        const decodeFileList = document.getElementById('decode-file-list');
+        const decodeProgress = document.getElementById('decode-progress');
+        const decodeFileProgress = document.getElementById('decode-file-progress');
+        const decodePercentProgress = document.getElementById('decode-percent-progress');
+        const decodeProgressFill = document.getElementById('decode-progress-fill');
+        const decodeDownloadSection = document.getElementById('decode-download');
+        const decodeDownloadBtn = document.getElementById('decode-download-btn');
+        const decodeProcessedCount = document.getElementById('decode-processed-count');
+        
+        let decodeFiles = [];
+        let decodeResults = [];
+        
+        decodeSelectBtn.addEventListener('click', () => {
+            decodeFileInput.click();
+        });
+        
+        decodeFileInput.addEventListener('change', (e) => {
+            processSelectedFiles(e.target.files, 'decode');
+        });
+        
+        // 处理选中的文件
+        async function processSelectedFiles(files, mode) {
+            const fileList = mode === 'encode' ? encodeFiles : decodeFiles;
+            const fileListElement = document.getElementById(`${mode}-file-list`);
+            const fileListContent = fileListElement.querySelector('.file-list-content');
+            const startBtn = document.getElementById(`${mode}-start-btn`);
+            const downloadSection = document.getElementById(`${mode}-download`);
+            
+            fileListContent.innerHTML = '';
+            fileList.length = 0;
+            if (mode === 'encode') encodeResults = [];
+            else decodeResults = [];
+            
+            downloadSection.style.display = 'none';
+            
+            // 处理每个文件
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                
+                if (file.type.startsWith('image/')) {
+                    // 直接添加图片文件
+                    fileList.push(file);
+                    addFileToList(file, fileListContent, fileList.length - 1, mode);
+                } else if (file.type === 'application/zip' || file.name.toLowerCase().endsWith('.zip')) {
+                    // 处理ZIP文件 - 使用zip.js
+                    try {
+                        const zipReader = new zip.ZipReader(new zip.BlobReader(file));
+                        const entries = await zipReader.getEntries();
+                        
+                        // 提取ZIP中的所有图片文件
+                        const imageFiles = [];
+                        for (const entry of entries) {
+                            if (!entry.directory && 
+                                (entry.filename.toLowerCase().endsWith('.png') || 
+                                 entry.filename.toLowerCase().endsWith('.jpg') || 
+                                 entry.filename.toLowerCase().endsWith('.jpeg'))) {
+                                
+                                const blob = await entry.getData(new zip.BlobWriter(getMimeTypeFromExtension(entry.filename)));
+                                const extractedFile = new File([blob], entry.filename, { type: getMimeTypeFromExtension(entry.filename) });
+                                imageFiles.push(extractedFile);
+                            }
+                        }
+                        
+                        // 添加提取的图片文件到列表
+                        for (const imageFile of imageFiles) {
+                            fileList.push(imageFile);
+                            addFileToList(imageFile, fileListContent, fileList.length - 1, mode);
+                        }
+                        
+                        await zipReader.close();
+                    } catch (error) {
+                        console.error('处理ZIP文件时出错:', error);
+                        alert('处理ZIP文件时出错: ' + error.message);
+                    }
+                }
+            }
+            
+            if (fileList.length > 0) {
+                fileListElement.style.display = 'block';
+                startBtn.disabled = false;
+            }
+        }
+        
+        // 获取文件扩展名对应的MIME类型
+        function getMimeTypeFromExtension(filename) {
+            const ext = filename.toLowerCase().split('.').pop();
+            switch(ext) {
+                case 'png': return 'image/png';
+                case 'jpg':
+                case 'jpeg': return 'image/jpeg';
+                default: return 'application/octet-stream';
+            }
+        }
+        
+        // 添加文件到列表
+        function addFileToList(file, listElement, index, mode) {
+            const fileItem = document.createElement('div');
+            fileItem.className = 'file-item';
+            fileItem.dataset.index = index;
+            
+            fileItem.innerHTML = `
+                <div>${index + 1}</div>
+                <div>${file.name}</div>
+                <div class="file-size">${formatFileSize(file.size)}</div>
+                <div class="file-status status-waiting">等待处理</div>
+            `;
+            
+            listElement.appendChild(fileItem);
+        }
+        
+        // 差值算法加密函数
+        function generateAB(OcRGB) {
+            let A = [0,0,0], B = [0,0,0];
+            let L = (OcRGB[0]+OcRGB[1]+OcRGB[2])/3.0/255.0;
+            let modeBrightProb = L / 2 + 0.5;
+            let modeBright = Math.random() < modeBrightProb;
+            let specialChannel = Math.floor(Math.random() * 3);
+            for (let c=0;c<3;c++){
+                if(modeBright){
+                    if(c===specialChannel){ A[c]=0; B[c]=OcRGB[c]; }
+                    else { A[c]=255; B[c]=255-OcRGB[c]; }
+                } else {
+                    if(c===specialChannel){ A[c]=255; B[c]=255-OcRGB[c]; }
+                    else { A[c]=0; B[c]=OcRGB[c]; }
+                }
+            }
+            if (Math.random() < 0.5) return [B, A];
+            return [A, B];
+        }
+
+        // 加密处理
+        function processEncryption(file, callback) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+                    
+                    // 使用差值算法加密
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const data = imageData.data;
+                    
+                    let resultA = new Uint8ClampedArray(data.length);
+                    let resultB = new Uint8ClampedArray(data.length);
+                    
+                    for (let i = 0; i < data.length; i += 4) {
+                        const OcRGB = [data[i], data[i+1], data[i+2]];
+                        const [A, B] = generateAB(OcRGB);
+                        
+                        resultA[i] = A[0];
+                        resultA[i+1] = A[1];
+                        resultA[i+2] = A[2];
+                        resultA[i+3] = 255;
+                        
+                        resultB[i] = B[0];
+                        resultB[i+1] = B[1];
+                        resultB[i+2] = B[2];
+                        resultB[i+3] = 255;
+                    }
+                    
+                    // 将A和B左右拼接
+                    const mergedCanvas = document.createElement('canvas');
+                    mergedCanvas.width = canvas.width * 2;
+                    mergedCanvas.height = canvas.height;
+                    const mergedCtx = mergedCanvas.getContext('2d');
+                    
+                    // 创建A部分图像
+                    const imageDataA = new ImageData(resultA, canvas.width, canvas.height);
+                    const tempCanvasA = document.createElement('canvas');
+                    tempCanvasA.width = canvas.width;
+                    tempCanvasA.height = canvas.height;
+                    tempCanvasA.getContext('2d').putImageData(imageDataA, 0, 0);
+                    
+                    // 创建B部分图像
+                    const imageDataB = new ImageData(resultB, canvas.width, canvas.height);
+                    const tempCanvasB = document.createElement('canvas');
+                    tempCanvasB.width = canvas.width;
+                    tempCanvasB.height = canvas.height;
+                    tempCanvasB.getContext('2d').putImageData(imageDataB, 0, 0);
+                    
+                    // 拼接图像
+                    mergedCtx.drawImage(tempCanvasA, 0, 0);
+                    mergedCtx.drawImage(tempCanvasB, canvas.width, 0);
+                    
+                    // 转换为Blob
+                    mergedCanvas.toBlob(blob => {
+                        callback(blob);
+                    }, 'image/png');
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        // 解密处理
+        function processDecryption(file, callback) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+                    
+                    // 获取图像数据
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const data = imageData.data;
+                    
+                    // 计算中间点（假设图像是左右拼接的）
+                    const midX = Math.floor(canvas.width / 2);
+                    
+                    // 创建解密后的图像数据
+                    const decryptedData = new Uint8ClampedArray(midX * canvas.height * 4);
+                    
+                    // 处理每一行
+                    for (let y = 0; y < canvas.height; y++) {
+                        for (let x = 0; x < midX; x++) {
+                            // 获取A部分和B部分的像素
+                            const idxA = (y * canvas.width + x) * 4;
+                            const idxB = (y * canvas.width + (x + midX)) * 4;
+                            
+                            const A = [data[idxA], data[idxA+1], data[idxA+2]];
+                            const B = [data[idxB], data[idxB+1], data[idxB+2]];
+                            
+                            // 计算原始像素
+                            const decryptedIdx = (y * midX + x) * 4;
+                            decryptedData[decryptedIdx] = Math.abs(A[0] - B[0]);
+                            decryptedData[decryptedIdx+1] = Math.abs(A[1] - B[1]);
+                            decryptedData[decryptedIdx+2] = Math.abs(A[2] - B[2]);
+                            decryptedData[decryptedIdx+3] = 255;
+                        }
+                    }
+                    
+                    // 创建解密后的图像
+                    const decryptedCanvas = document.createElement('canvas');
+                    decryptedCanvas.width = midX;
+                    decryptedCanvas.height = canvas.height;
+                    const decryptedCtx = decryptedCanvas.getContext('2d');
+                    const decryptedImageData = new ImageData(decryptedData, midX, canvas.height);
+                    decryptedCtx.putImageData(decryptedImageData, 0, 0);
+                    
+                    // 转换为Blob
+                    decryptedCanvas.toBlob(blob => {
+                        callback(blob);
+                    }, 'image/png');
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        // 开始加密处理
+        encodeStartBtn.addEventListener('click', () => {
+            startProcessing('encode');
+        });
+        
+        // 开始解密处理
+        decodeStartBtn.addEventListener('click', () => {
+            startProcessing('decode');
+        });
+        
+        // 开始处理文件
+        function startProcessing(mode) {
+            const fileList = mode === 'encode' ? encodeFiles : decodeFiles;
+            const progressElement = document.getElementById(`${mode}-progress`);
+            const fileProgressElement = document.getElementById(`${mode}-file-progress`);
+            const percentProgressElement = document.getElementById(`${mode}-percent-progress`);
+            const progressFillElement = document.getElementById(`${mode}-progress-fill`);
+            const startBtn = document.getElementById(`${mode}-start-btn`);
+            const selectBtn = document.getElementById(`${mode}-select-btn`);
+            const fileListElement = document.getElementById(`${mode}-file-list`);
+            const downloadSection = document.getElementById(`${mode}-download`);
+            const processedCount = document.getElementById(`${mode}-processed-count`);
+            
+            // 显示进度条
+            progressElement.style.display = 'block';
+            startBtn.disabled = true;
+            selectBtn.disabled = true;
+            
+            let processed = 0;
+            const total = fileList.length;
+            const results = [];
+            
+            // 更新进度信息
+            fileProgressElement.textContent = `处理文件: ${processed}/${total}`;
+            percentProgressElement.textContent = `进度: 0%`;
+            progressFillElement.style.width = '0%';
+            
+            // 处理每个文件
+            const processNext = () => {
+                if (processed >= total) {
+                    // 所有文件处理完成
+                    progressElement.style.display = 'none';
+                    startBtn.disabled = false;
+                    selectBtn.disabled = false;
+                    
+                    // 保存结果
+                    if (mode === 'encode') {
+                        encodeResults = results;
+                    } else {
+                        decodeResults = results;
+                    }
+                    
+                    // 显示下载区域
+                    downloadSection.style.display = 'block';
+                    processedCount.textContent = total;
+                    
+                    return;
+                }
+                
+                // 更新文件状态
+                const fileItem = fileListElement.querySelector(`.file-item[data-index="${processed}"]`);
+                if (fileItem) {
+                    fileItem.querySelector('.file-status').textContent = '处理中';
+                    fileItem.querySelector('.file-status').className = 'file-status status-processing';
+                }
+                
+                // 处理文件
+                const processFunction = mode === 'encode' ? processEncryption : processDecryption;
+                processFunction(fileList[processed], (blob) => {
+                    // 保存结果
+                    results.push({
+                        blob: blob,
+                        name: fileList[processed].name.replace(/\.[^/.]+$/, "") + 
+                              (mode === 'encode' ? '_encrypted.png' : '_decrypted.png')
+                    });
+                    
+                    // 更新文件状态
+                    if (fileItem) {
+                        fileItem.querySelector('.file-status').textContent = '已完成';
+                        fileItem.querySelector('.file-status').className = 'file-status status-completed';
+                    }
+                    
+                    // 更新进度
+                    processed++;
+                    const progressPercent = Math.round((processed / total) * 100);
+                    
+                    fileProgressElement.textContent = `处理文件: ${processed}/${total}`;
+                    percentProgressElement.textContent = `进度: ${progressPercent}%`;
+                    progressFillElement.style.width = `${progressPercent}%`;
+                    
+                    // 处理下一个文件
+                    setTimeout(processNext, 100);
+                });
+            };
+            
+            processNext();
+        }
+        
+        // 加密下载处理
+        encodeDownloadBtn.addEventListener('click', () => {
+            downloadResults(encodeResults, 'encrypted_images.zip');
+        });
+        
+        // 解密下载处理
+        decodeDownloadBtn.addEventListener('click', () => {
+            downloadResults(decodeResults, 'decrypted_images.zip');
+        });
+        
+        // 下载结果 - 使用zip.js
+        async function downloadResults(results, zipName) {
+            if (results.length === 0) return;
+            
+            try {
+                // 创建ZIP写入器
+                const zipWriter = new zip.ZipWriter(new zip.BlobWriter('application/zip'));
+                
+                // 添加所有文件到ZIP
+                for (const result of results) {
+                    await zipWriter.add(result.name, new zip.BlobReader(result.blob));
+                }
+                
+                // 关闭ZIP并获取最终的Blob
+                const zipBlob = await zipWriter.close();
+                
+                // 创建下载链接
+                const downloadLink = document.createElement('a');
+                downloadLink.href = URL.createObjectURL(zipBlob);
+                downloadLink.download = zipName;
+                document.body.appendChild(downloadLink);
+                downloadLink.click();
+                document.body.removeChild(downloadLink);
+                
+            } catch (error) {
+                console.error('创建ZIP文件时出错:', error);
+                alert('创建ZIP文件时出错: ' + error.message);
+            }
+        }
+        
+        // 辅助函数：格式化文件大小
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+            else return (bytes / 1048576).toFixed(1) + ' MB';
+        }
+        
+        // 初始化页面
+        document.addEventListener('DOMContentLoaded', () => {
+            // 初始化线程选择
+            document.getElementById('encode-thread-select').value = '8';
+            document.getElementById('decode-thread-select').value = '8';
+        });
+    </script>
+</body>
+</html>
